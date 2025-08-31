@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 
+
 interface LoadingScreenProps {
   onComplete: () => void;
 }
@@ -49,7 +50,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
         </div>
 
         <p className="text-silver-300 mt-4 text-sm opacity-75">
-          Chargement en cours...
+          Please Wait ...
         </p>
       </div>
     </div>
