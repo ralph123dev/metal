@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, User, Phone, Globe } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 
-//base de donnée importer sur mon email appeller DataScrapr
+// base de données importer sur mon email appeller DataScrapr
 const firebaseConfig = {
   apiKey: "AIzaSyA9fMT5Sj91Z3BzgcF8TvVvocRzide3nNc",
   authDomain: "datascrapr-d6250.firebaseapp.com",
@@ -17,6 +17,52 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Liste des indicatifs téléphoniques et pays (simplifiée pour l'exemple)
+// Vous pouvez trouver des listes plus complètes en ligne et les importer ici
+const countryCallingCodes = {
+  "1": "United States", // Inclut aussi le Canada et d'autres pays du NANP
+  "44": "United Kingdom",
+  "33": "France",
+  "49": "Germany",
+  "81": "Japan",
+  "86": "China",
+  "91": "India",
+  "27": "South Africa",
+  "61": "Australia",
+  "55": "Brazil",
+  "52": "Mexico",
+  "34": "Spain",
+  "39": "Italy",
+  "7": "Russia", // et Kazakhstan
+  "971": "United Arab Emirates",
+  "966": "Saudi Arabia",
+  "212": "Morocco",
+  "213": "Algeria",
+  "216": "Tunisia",
+  "221": "Senegal",
+  "225": "Ivory Coast",
+  "234": "Nigeria",
+  "243": "Congo (Kinshasa)",
+  "254": "Kenya",
+  "263": "Zimbabwe",
+  "351": "Portugal",
+  "353": "Ireland",
+  "358": "Finland",
+  "41": "Switzerland",
+  "46": "Sweden",
+  "47": "Norway",
+  "48": "Poland",
+  "60": "Malaysia",
+  "62": "Indonesia",
+  "63": "Philippines",
+  "64": "New Zealand",
+  "65": "Singapore",
+  "66": "Thailand",
+  "82": "South Korea",
+  "90": "Turkey",
+};
+
+
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,7 +70,7 @@ const AuthForm = () => {
   const [formData, setFormData] = useState({
     nom: '',
     telephone: '',
-    pays: ''
+    pays: '' // L'utilisateur choisit manuellement, ou est rempli automatiquement
   });
   const [showPolicy, setShowPolicy] = useState(false);
 
@@ -33,10 +79,27 @@ const AuthForm = () => {
   ];
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+
+    // Logique pour détecter l'indicatif téléphonique et remplir le pays
+    if (name === 'telephone' && !isLogin) {
+      let detectedCountry = '';
+      // On essaie de trouver le plus long indicatif correspondant
+      for (let code in countryCallingCodes) {
+        if (value.startsWith('+' + code)) {
+          detectedCountry = countryCallingCodes[code];
+        }
+      }
+      setFormData(prev => ({
+        ...prev,
+        pays: detectedCountry,
+        telephone: value // Assurez-vous que la valeur du téléphone est aussi mise à jour
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -95,13 +158,13 @@ const AuthForm = () => {
     setFormData({
       nom: '',
       telephone: '',
-      pays: ''
+      pays: '' // Réinitialise le pays lors du changement de mode
     });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6My8vZXd3Lm5vcmcvMjAwMC9zdmciPjxlZnM+cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDEwIDAgTCAwIDAgMCAxMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZWYxPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0gMTAgMCBMIDAgMCAwIDEwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZWYxPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Z3I+')] opacity-30"></div>
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
@@ -129,21 +192,19 @@ const AuthForm = () => {
             <div className="flex mb-6 bg-slate-800/50 rounded-xl p-1">
               <button
                 onClick={switchMode}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${
-                  !isLogin
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${!isLogin
                     ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105'
                     : 'text-slate-300 hover:text-white'
-                }`}
+                  }`}
               >
                 To register
               </button>
               <button
                 onClick={switchMode}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${
-                  isLogin
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${isLogin
                     ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105'
                     : 'text-slate-300 hover:text-white'
-                }`}
+                  }`}
               >
                 Login
               </button>
@@ -184,7 +245,7 @@ const AuthForm = () => {
                   name="telephone"
                   value={formData.telephone}
                   onChange={handleInputChange}
-                  placeholder="Phone number"
+                  placeholder="Phone number (e.g., +33 6 12 34 56 78)"
                   required
                   className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]"
                 />
@@ -212,14 +273,14 @@ const AuthForm = () => {
                   </select>
                 </div>
               )}
-              
+
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 px-4 bg-gradient-to-r from-silver-500 via-slate-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/50 active:scale-[0.98] relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="relative z-10">
-                  {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer mon compte')}
+                  {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créate account')}
                 </span>
 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -254,12 +315,14 @@ const AuthForm = () => {
                   >
                     ×
                   </button>
-                  <h2 className="text-lg font-bold mb-2 text-slate-800">Politique de confidentialité</h2>
+                  <h2 className="text-lg font-bold mb-2 text-slate-800">Privacy Policy</h2>
                   <p className="text-slate-700 text-sm mb-2">
-                    Vos informations (nom, numéro de téléphone, pays) sont utilisées uniquement pour la gestion de votre compte sur Metal Exchange. Elles ne seront jamais partagées avec des tiers sans votre consentement. Pour toute question, contactez-nous.
+                    Your information (name, phone number, country) is used solely for the management of your Metal Exchange account. It will never be shared with third parties without your consent. For any questions, please contact us.
+
+                    By using this service, you agree to our Terms of Use and Privacy Policy.
                   </p>
                   <p className="text-slate-700 text-xs">
-                    En utilisant ce service, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
+                    By using this service, you consent to our Terms of Use and Privacy Policy.
                   </p>
                 </div>
               </div>
