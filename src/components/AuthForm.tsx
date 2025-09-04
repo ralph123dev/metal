@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, User, Phone, Globe } from 'lucide-react';
+import { MessageCircle, User, Phone, Globe, Home, Settings, Send } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDocs, collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, signInAnonymously } from 'firebase/auth';
 
-// Configuration Firebase et initialisation (utilisez les variables globales fournies)
+// Initialisation de Firebase
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
   apiKey: "AIzaSyA9fMT5Sj91Z3BzgcF8TvVvocRzide3nNc",
@@ -21,95 +21,27 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Définitions pour les codes de pays (comme dans le code initial)
 const countryCallingCodes = {
-  "1": "United States",
-  "44": "United Kingdom",
-  "33": "France",
-  "49": "Germany",
-  "81": "Japan",
-  "86": "China",
-  "91": "India",
-  "27": "South Africa",
-  "61": "Australia",
-  "55": "Brazil",
-  "52": "Mexico",
-  "34": "Spain",
-  "39": "Italy",
-  "7": "Russia",
-  "971": "United Arab Emirates",
-  "966": "Saudi Arabia",
-  "212": "Morocco",
-  "213": "Algeria",
-  "216": "Tunisia",
-  "221": "Senegal",
-  "225": "Ivory Coast",
-  "234": "Nigeria",
-  "243": "Congo (Kinshasa)",
-  "254": "Kenya",
-  "263": "Zimbabwe",
-  "351": "Portugal",
-  "353": "Ireland",
-  "358": "Finland",
-  "41": "Switzerland",
-  "46": "Sweden",
-  "47": "Norway",
-  "48": "Poland",
-  "60": "Malaysia",
-  "62": "Indonesia",
-  "63": "Philippines",
-  "64": "New Zealand",
-  "65": "Singapore",
-  "66": "Thailand",
-  "82": "South Korea",
-  "90": "Turkey",
+  "1": "United States", "44": "United Kingdom", "33": "France", "49": "Germany", "81": "Japan", "86": "China",
+  "91": "India", "27": "South Africa", "61": "Australia", "55": "Brazil", "52": "Mexico", "34": "Spain",
+  "39": "Italy", "7": "Russia", "971": "United Arab Emirates", "966": "Saudi Arabia", "212": "Morocco",
+  "213": "Algeria", "216": "Tunisia", "221": "Senegal", "225": "Ivory Coast", "234": "Nigeria",
+  "243": "Congo (Kinshasa)", "254": "Kenya", "263": "Zimbabwe", "351": "Portugal", "353": "Ireland",
+  "358": "Finland", "41": "Switzerland", "46": "Sweden", "47": "Norway", "48": "Poland", "60": "Malaysia",
+  "62": "Indonesia", "63": "Philippines", "64": "New Zealand", "65": "Singapore", "66": "Thailand",
+  "82": "South Korea", "90": "Turkey",
 };
 
 const countries = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo (Brazzaville)', 'Congo (Kinshasa)', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czechia', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe', 'Abkhazia', 'Artsakh', 'Cook Islands', 'Kosovo', 'Niue', 'Northern Cyprus', 'Sahrawi Arab Democratic Republic', 'Somaliland', 'South Ossetia', 'Taiwan', 'Transnistria', 'Vatican City', 'Åland Islands', 'American Samoa', 'Anguilla', 'Aruba', 'Bermuda', 'British Virgin Islands', 'Cayman Islands', 'Christmas Island', 'Cocos (Keeling) Islands', 'Cook Islands', 'Curaçao', 'Falkland Islands', 'Faroe Islands', 'French Guiana', 'French Polynesia', 'Gibraltar', 'Greenland', 'Guam', 'Guernsey', 'Isle of Man', 'Jersey', 'Kosovo', 'Macau', 'Martinique', 'Mayotte', 'Mayotte', 'Montserrat', 'New Caledonia', 'Niue', 'Norfolk Island', 'Northern Mariana Islands', 'Palestine', 'Pitcairn Islands', 'Puerto Rico', 'Réunion', 'Saint Helena, Ascension and Tristan da Cunha', 'Saint Martin (French part)', 'Saint Pierre and Miquelon', 'Sint Maarten (Dutch part)', 'South Georgia and the South Sandwich Islands', 'Svalbard and Jan Mayen', 'Tokelau', 'Turks and Caicos Islands', 'United States Minor Outlying Islands', 'U.S. Virgin Islands', 'Wallis and Futuna', 'Western Sahara', 'Zanzibar',
 ];
 
-const UserList = ({ users }) => {
-  return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
-      <h2 className="text-xl font-bold text-white mb-6">
-        <span className="bg-gradient-to-r from-silver-200 via-white to-blue-300 bg-clip-text text-transparent">
-          Registered Users
-        </span>
-      </h2>
-      <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-        {users.length > 0 ? (
-          users.map((user, index) => (
-            <div key={index} className="bg-slate-800/50 rounded-xl p-4 transition-all duration-300 transform hover:scale-[1.02]">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <User className="w-8 h-8 text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-white font-medium">{user.name}</h3>
-                  <p className="text-slate-400 text-sm">{user.phoneNumber}</p>
-                  <p className="text-slate-500 text-xs">Country: {user.country}</p>
-                  <p className="text-slate-500 text-xs">User ID: {user.id}</p>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-slate-400 text-center">No users registered yet.</p>
-        )}
-      </div>
-    </div>
-  );
-};
-
 const AuthForm = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({
-    nom: '',
-    telephone: '',
-    pays: ''
-  });
+  const [formData, setFormData] = useState({ nom: '', telephone: '', pays: '' });
   const [showPolicy, setShowPolicy] = useState(false);
 
   const handleInputChange = (e) => {
@@ -123,11 +55,7 @@ const AuthForm = ({ onLoginSuccess }) => {
           detectedCountry = countryCallingCodes[code];
         }
       }
-      setFormData(prev => ({
-        ...prev,
-        pays: detectedCountry,
-        telephone: value
-      }));
+      setFormData(prev => ({ ...prev, pays: detectedCountry, telephone: value }));
     }
   };
 
@@ -143,27 +71,30 @@ const AuthForm = ({ onLoginSuccess }) => {
 
       if (isLogin) {
         if (!querySnapshot.empty) {
-          onLoginSuccess();
+          const userDoc = querySnapshot.docs[0];
+          onLoginSuccess({ id: userDoc.id, ...userDoc.data() });
         } else {
-          setError("No account found with this phone number.");
+          setError("Aucun compte trouvé avec ce numéro de téléphone.");
         }
       } else {
         if (!querySnapshot.empty) {
-          setError("An account already exists with this phone number.");
+          setError("Un compte existe déjà avec ce numéro de téléphone.");
         } else {
           const newUserRef = doc(usersRef);
           await setDoc(newUserRef, {
             name: formData.nom,
             phoneNumber: formData.telephone,
             country: formData.pays,
-            createdAt: new Date()
+            createdAt: serverTimestamp()
           });
-          onLoginSuccess();
+          const userDoc = await getDocs(query(usersRef, where('phoneNumber', '==', formData.telephone)));
+          const newUser = userDoc.docs[0];
+          onLoginSuccess({ id: newUser.id, ...newUser.data() });
         }
       }
     } catch (err) {
-      console.error('Firebase error:', err);
-      setError("An error occurred. Please try again.");
+      console.error('Erreur Firebase:', err);
+      setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -172,11 +103,7 @@ const AuthForm = ({ onLoginSuccess }) => {
   const switchMode = () => {
     setIsLogin(!isLogin);
     setError(null);
-    setFormData({
-      nom: '',
-      telephone: '',
-      pays: ''
-    });
+    setFormData({ nom: '', telephone: '', pays: '' });
   };
 
   return (
@@ -191,7 +118,7 @@ const AuthForm = ({ onLoginSuccess }) => {
           </span>
         </h1>
         <p className="text-slate-400 text-sm">
-          {isLogin ? 'Welcome back to us' : 'Join the community'}
+          {isLogin ? 'Bienvenue à nouveau' : 'Rejoignez la communauté'}
         </p>
       </div>
       <div className="relative">
@@ -202,21 +129,15 @@ const AuthForm = ({ onLoginSuccess }) => {
           <div className="flex mb-6 bg-slate-800/50 rounded-xl p-1">
             <button
               onClick={switchMode}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${!isLogin
-                ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105'
-                : 'text-slate-300 hover:text-white'
-                }`}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${!isLogin ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105' : 'text-slate-300 hover:text-white'}`}
             >
-              To register
+              S'inscrire
             </button>
             <button
               onClick={switchMode}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${isLogin
-                ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105'
-                : 'text-slate-300 hover:text-white'
-                }`}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${isLogin ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105' : 'text-slate-300 hover:text-white'}`}
             >
-              Login
+              Se connecter
             </button>
           </div>
           {error && (
@@ -230,96 +151,51 @@ const AuthForm = ({ onLoginSuccess }) => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
                 </div>
-                <input
-                  type="text"
-                  name="nom"
-                  value={formData.nom}
-                  onChange={handleInputChange}
-                  placeholder="Name"
-                  required={!isLogin}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]"
-                />
+                <input type="text" name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required={!isLogin} className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
               </div>
             )}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Phone className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
               </div>
-              <input
-                type="tel"
-                name="telephone"
-                value={formData.telephone}
-                onChange={handleInputChange}
-                placeholder="Phone number (e.g., +33 6 12 34 56 78)"
-                required
-                className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]"
-              />
+              <input type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} placeholder="Numéro de téléphone (ex: +33 6 12 34 56 78)" required className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
             </div>
             {!isLogin && (
               <div className="relative group transform transition-all duration-500 animate-fadeIn">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Globe className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
                 </div>
-                <select
-                  name="pays"
-                  value={formData.pays}
-                  onChange={handleInputChange}
-                  required={!isLogin}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02] appearance-none"
-                >
-                  <option value="" disabled className="bg-slate-800">Select your country</option>
-                  {countries.map((country, index) => (
-                    <option key={`${country}-${index}`} value={country} className="bg-slate-800">
-                      {country}
-                    </option>
-                  ))}
+                <select name="pays" value={formData.pays} onChange={handleInputChange} required={!isLogin} className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02] appearance-none">
+                  <option value="" disabled className="bg-slate-800">Sélectionnez votre pays</option>
+                  {countries.map((country, index) => (<option key={`${country}-${index}`} value={country} className="bg-slate-800">{country}</option>))}
                 </select>
               </div>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-silver-500 via-slate-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/50 active:scale-[0.98] relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading} className="w-full py-3 px-4 bg-gradient-to-r from-silver-500 via-slate-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/50 active:scale-[0.98] relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed">
               <span className="relative z-10">
-                {loading ? 'Loading...' : (isLogin ? 'Login' : 'Create account')}
+                {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </button>
           </form>
           <div className="mt-6 text-center">
             <p className="text-slate-400 text-xs">
-              By continuing, you agree to our{' '}
-              <span
-                className="text-blue-400 hover:text-blue-300 cursor-pointer underline transition-colors duration-200"
-                onClick={() => setShowPolicy(true)}
-              >
-                terms of use
+              En continuant, vous acceptez nos{' '}
+              <span className="text-blue-400 hover:text-blue-300 cursor-pointer underline transition-colors duration-200" onClick={() => setShowPolicy(true)}>
+                conditions d'utilisation
               </span>{' '}
-              and our{' '}
-              <span
-                className="text-blue-400 hover:text-blue-300 cursor-pointer underline transition-colors duration-200"
-                onClick={() => setShowPolicy(true)}
-              >
-                Privacy Policy
+              et notre{' '}
+              <span className="text-blue-400 hover:text-blue-300 cursor-pointer underline transition-colors duration-200" onClick={() => setShowPolicy(true)}>
+                politique de confidentialité
               </span>
             </p>
           </div>
           {showPolicy && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
               <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full relative">
-                <button
-                  className="absolute top-2 right-2 text-slate-500 hover:text-blue-600 text-xl font-bold"
-                  onClick={() => setShowPolicy(false)}
-                >
-                  &times;
-                </button>
-                <h2 className="text-lg font-bold mb-2 text-slate-800">Privacy Policy</h2>
-                <p className="text-slate-700 text-sm mb-2">
-                  Your information (name, phone number, country) is used solely for the management of your Metal Exchange account. It will never be shared with third parties without your consent. For any questions, please contact us.
-                  <br /><br />
-                  By using this service, you consent to our Terms of Use and Privacy Policy.
-                </p>
+                <button className="absolute top-2 right-2 text-slate-500 hover:text-blue-600 text-xl font-bold" onClick={() => setShowPolicy(false)}>&times;</button>
+                <h2 className="text-lg font-bold mb-2 text-slate-800">Politique de confidentialité</h2>
+                <p className="text-slate-700 text-sm mb-2">Vos informations sont utilisées uniquement pour la gestion de votre compte. Elles ne seront jamais partagées sans votre consentement.</p>
               </div>
             </div>
           )}
@@ -331,52 +207,252 @@ const AuthForm = ({ onLoginSuccess }) => {
   );
 };
 
-const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [users, setUsers] = useState([]);
+const UserList = ({ users, onUserSelect }) => {
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-white/20 w-full">
+      <h2 className="text-lg font-bold text-white mb-4">
+        <span className="bg-gradient-to-r from-silver-200 via-white to-blue-300 bg-clip-text text-transparent">
+          Utilisateurs
+        </span>
+      </h2>
+      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+        {users.length > 0 ? (
+          users.map(user => (
+            <button key={user.id} onClick={() => onUserSelect(user)} className="flex items-center space-x-3 w-full p-3 rounded-xl bg-slate-800/50 text-left hover:bg-slate-700/50 transition-colors duration-200">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                {user.name[0].toUpperCase()}
+              </div>
+              <p className="text-white font-medium">{user.name}</p>
+            </button>
+          ))
+        ) : (
+          <p className="text-slate-400 text-center text-sm">Aucun utilisateur enregistré.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Chat = ({ currentUserId, selectedUser, onBack }) => {
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = React.useRef(null);
+
+  // Déterminer un ID de conversation unique
+  const conversationId = [currentUserId, selectedUser.id].sort().join('_');
 
   useEffect(() => {
+    const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages', conversationId, 'chat');
+    const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
+      const messagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      messagesList.sort((a, b) => a.createdAt.seconds - b.createdAt.seconds);
+      setMessages(messagesList);
+      scrollToBottom();
+    });
+    return () => unsubscribe();
+  }, [conversationId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages', conversationId, 'chat');
+      await addDoc(messagesRef, {
+        senderId: currentUserId,
+        text: newMessage,
+        createdAt: serverTimestamp()
+      });
+      setNewMessage('');
+    } catch (error) {
+      console.error("Erreur lors de l'envoi du message:", error);
+    }
+  };
+
+  return (
+    <div className="relative w-full h-full flex flex-col bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-white/20">
+      <div className="flex items-center space-x-2 pb-4 border-b border-white/20">
+        <button onClick={onBack} className="md:hidden text-white hover:text-blue-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+          {selectedUser.name[0].toUpperCase()}
+        </div>
+        <h2 className="text-lg font-bold text-white">{selectedUser.name}</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto my-4 space-y-4">
+        {messages.map((msg, index) => (
+          <div key={index} className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}>
+            <div className={`p-3 rounded-xl max-w-xs md:max-w-md break-words ${msg.senderId === currentUserId ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-white rounded-bl-none'}`}>
+              <p className="text-sm">{msg.text}</p>
+              <span className="block text-right text-xs text-gray-400 mt-1">
+                {msg.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Écrire un message..." className="flex-1 pl-4 pr-3 py-2 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+        <button type="submit" className="p-3 bg-blue-600 rounded-xl text-white shadow-lg hover:bg-blue-500 transition-colors duration-200">
+          <Send className="w-5 h-5" />
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const SettingsPage = () => (
+  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-center h-full flex flex-col justify-center items-center">
+    <Settings className="w-16 h-16 text-blue-400 mb-4" />
+    <h2 className="text-xl font-bold text-white mb-2">Paramètres</h2>
+    <p className="text-slate-400">Fonctionnalités à venir : notifications, profil, etc.</p>
+  </div>
+);
+
+const HomePage = () => (
+  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-center h-full flex flex-col justify-center items-center">
+    <Home className="w-16 h-16 text-blue-400 mb-4" />
+    <h2 className="text-xl font-bold text-white mb-2">Accueil</h2>
+    <p className="text-slate-400">Bienvenue sur Metal Exchange !</p>
+  </div>
+);
+
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState('home'); // Pour la navigation mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Authentification initiale
+  useEffect(() => {
     const authUser = async () => {
-      if (initialAuthToken) {
-        await signInWithCustomToken(auth, initialAuthToken);
-      } else {
-        await signInAnonymously(auth);
+      try {
+        if (initialAuthToken) {
+          await signInWithCustomToken(auth, initialAuthToken);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (e) {
+        console.error("Erreur lors de l'authentification :", e);
       }
     };
     authUser();
   }, []);
 
+  // Détecter la taille de l'écran pour le responsive
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Récupérer tous les utilisateurs après une connexion réussie
   useEffect(() => {
     if (isLoggedIn) {
       const fetchUsers = async () => {
         try {
           const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
           const querySnapshot = await getDocs(usersRef);
-          const usersList = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setUsers(usersList);
+          const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setUsers(usersList.filter(u => u.id !== currentUser.id)); // Exclure l'utilisateur actuel
         } catch (err) {
-          console.error('Error fetching users:', err);
+          console.error('Erreur lors de la récupération des utilisateurs:', err);
         }
       };
       fetchUsers();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, currentUser]);
+
+  const onLoginSuccess = (user) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    setCurrentPage('users'); // Naviguer vers la liste des utilisateurs après connexion
+  };
+
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    setCurrentPage('chat'); // Naviguer vers le chat sur mobile
+  };
+
+  const handleBack = () => {
+    setSelectedUser(null);
+    setCurrentPage('users');
+  };
+
+  // Rendu de l'application
+  const renderContent = () => {
+    if (!isLoggedIn) {
+      return <AuthForm onLoginSuccess={onLoginSuccess} />;
+    }
+
+    if (isMobile) {
+      // Vue mobile
+      switch (currentPage) {
+        case 'home':
+          return <HomePage />;
+        case 'users':
+          return <UserList users={users} onUserSelect={handleUserSelect} />;
+        case 'settings':
+          return <SettingsPage />;
+        case 'chat':
+          return <Chat currentUserId={currentUser.id} selectedUser={selectedUser} onBack={handleBack} />;
+        default:
+          return <HomePage />;
+      }
+    } else {
+      // Vue desktop (PC)
+      return (
+        <div className="flex w-full h-full rounded-2xl shadow-2xl overflow-hidden">
+          <div className="w-2/3 p-4">
+            {selectedUser ? (
+              <Chat currentUserId={currentUser.id} selectedUser={selectedUser} onBack={handleBack} />
+            ) : (
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-center h-full flex items-center justify-center">
+                <p className="text-slate-400">Sélectionnez un utilisateur pour commencer à chatter.</p>
+              </div>
+            )}
+          </div>
+          <div className="w-1/3 p-4 bg-slate-900/50">
+            <UserList users={users} onUserSelect={handleUserSelect} />
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZWYxPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0gMTAgMCBMIDAgMCAwIDEwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZWYxPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Z3I+')] opacity-30"></div>
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-center w-full max-w-6xl space-y-8 md:space-y-0 md:space-x-8 z-10">
-        <div className="w-full md:w-1/2">
-          {isLoggedIn ? (
-            <UserList users={users} />
-          ) : (
-            <AuthForm onLoginSuccess={() => setIsLoggedIn(true)} />
-          )}
-        </div>
+      <div className="flex-1 w-full max-w-6xl z-10 p-4">
+        {renderContent()}
       </div>
+
+      {isLoggedIn && isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-slate-900/50 backdrop-blur-lg border-t border-white/20 flex justify-around p-2 z-20">
+          <button onClick={() => setCurrentPage('home')} className={`flex flex-col items-center text-xs font-medium ${currentPage === 'home' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
+            <Home className="w-6 h-6" />
+            <span>Accueil</span>
+          </button>
+          <button onClick={() => setCurrentPage('users')} className={`flex flex-col items-center text-xs font-medium ${currentPage === 'users' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
+            <User className="w-6 h-6" />
+            <span>Utilisateurs</span>
+          </button>
+          <button onClick={() => setCurrentPage('settings')} className={`flex flex-col items-center text-xs font-medium ${currentPage === 'settings' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
+            <Settings className="w-6 h-6" />
+            <span>Paramètres</span>
+          </button>
+        </div>
+      )}
       <script src="https://cdn.tailwindcss.com"></script>
     </div>
   );
