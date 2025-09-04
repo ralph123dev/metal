@@ -12,7 +12,7 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
   projectId: "datascrapr-d6250",
   storageBucket: "datascrapr-d6250.appspot.com",
   messagingSenderId: "861823831568",
-  appId: "1:861823831568:web:f4f71e45c7d10d4495",
+  appId: "1:861823831568:web:f4f71e45c7d10d480d4495",
   measurementId: "G-7Q9L777MX6"
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -240,7 +240,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Déterminer un ID de conversation unique
+  // Déterminer un ID de conversation unique pour la collection de messages et l'indicateur d'écriture
   const conversationId = [currentUserId, selectedUser.id].sort().join('_');
 
   useEffect(() => {
@@ -254,14 +254,18 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
     return () => unsubscribe();
   }, [conversationId]);
 
-  // Listener pour l'indicateur de saisie
+  // Écoute de l'indicateur de saisie de l'autre utilisateur
   useEffect(() => {
+    // Crée une référence vers le document qui stocke l'état d'écriture
     const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
+    
+    // S'abonne aux changements en temps réel de ce document
     const unsubscribe = onSnapshot(typingRef, (docSnap) => {
+      // Vérifie si le document existe et si l'utilisateur qui écrit n'est pas nous-mêmes
       if (docSnap.exists() && docSnap.data().typingUserId !== currentUserId) {
-        setIsTyping(true);
+        setIsTyping(true); // Affiche l'indicateur d'écriture
       } else {
-        setIsTyping(false);
+        setIsTyping(false); // Cache l'indicateur
       }
     });
     return () => unsubscribe();
@@ -283,7 +287,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
         createdAt: serverTimestamp()
       });
       setNewMessage('');
-      // Effacer l'indicateur de saisie après l'envoi
+      // Après l'envoi, on efface notre propre indicateur d'écriture
       const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
       await setDoc(typingRef, { typingUserId: '' }, { merge: true });
     } catch (error) {
@@ -291,18 +295,19 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
     }
   };
   
+  // Met à jour l'état de l'input et envoie le signal d'écriture à la base de données
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
     
-    // Envoyer l'état de saisie
+    // Envoie notre ID à la base de données pour signaler que nous écrivons
     const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
     setDoc(typingRef, { typingUserId: currentUserId }, { merge: true });
 
-    // Annuler le timeout précédent pour éviter des écritures multiples
+    // Annule le timer précédent pour éviter des écritures multiples
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    // Effacer l'état de saisie après 2 secondes d'inactivité
+    // Si on arrête d'écrire pendant 2 secondes, l'ID d'écriture est effacé
     typingTimeoutRef.current = setTimeout(() => {
       setDoc(typingRef, { typingUserId: '' }, { merge: true });
     }, 2000);
