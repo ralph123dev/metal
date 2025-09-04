@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, User, Phone, Globe, Home, Settings, Send } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDocs, collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -12,7 +12,7 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
   projectId: "datascrapr-d6250",
   storageBucket: "datascrapr-d6250.appspot.com",
   messagingSenderId: "861823831568",
-  appId: "1:861823831568:web:f4f71e45c7d10d480d4495",
+  appId: "1:861823831568:web:f4f71e45c7d10d4495",
   measurementId: "G-7Q9L777MX6"
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -236,7 +236,9 @@ const UserList = ({ users, onUserSelect, title = "Utilisateurs" }) => {
 const Chat = ({ currentUserId, selectedUser, onBack }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const messagesEndRef = React.useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Déterminer un ID de conversation unique
   const conversationId = [currentUserId, selectedUser.id].sort().join('_');
@@ -251,6 +253,19 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
     });
     return () => unsubscribe();
   }, [conversationId]);
+
+  // Listener pour l'indicateur de saisie
+  useEffect(() => {
+    const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
+    const unsubscribe = onSnapshot(typingRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().typingUserId !== currentUserId) {
+        setIsTyping(true);
+      } else {
+        setIsTyping(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [conversationId, currentUserId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -268,9 +283,29 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
         createdAt: serverTimestamp()
       });
       setNewMessage('');
+      // Effacer l'indicateur de saisie après l'envoi
+      const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
+      await setDoc(typingRef, { typingUserId: '' }, { merge: true });
     } catch (error) {
       console.error("Erreur lors de l'envoi du message:", error);
     }
+  };
+  
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    
+    // Envoyer l'état de saisie
+    const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
+    setDoc(typingRef, { typingUserId: currentUserId }, { merge: true });
+
+    // Annuler le timeout précédent pour éviter des écritures multiples
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    // Effacer l'état de saisie après 2 secondes d'inactivité
+    typingTimeoutRef.current = setTimeout(() => {
+      setDoc(typingRef, { typingUserId: '' }, { merge: true });
+    }, 2000);
   };
 
   return (
@@ -284,7 +319,16 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
           {selectedUser.name[0].toUpperCase()}
         </div>
-        <h2 className="text-lg font-bold text-white">{selectedUser.name}</h2>
+        <div>
+          <h2 className="text-lg font-bold text-white">{selectedUser.name}</h2>
+          {isTyping && (
+            <div className="flex items-center space-x-1 mt-1 animate-pulse">
+              <span className="w-2 h-2 bg-slate-400 rounded-full"></span>
+              <span className="w-2 h-2 bg-slate-400 rounded-full animation-delay-150"></span>
+              <span className="w-2 h-2 bg-slate-400 rounded-full animation-delay-300"></span>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto my-4 space-y-4">
         {messages.map((msg, index) => (
@@ -300,7 +344,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Écrire un message..." className="flex-1 pl-4 pr-3 py-2 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+        <input type="text" value={newMessage} onChange={handleTyping} placeholder="Écrire un message..." className="flex-1 pl-4 pr-3 py-2 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         <button type="submit" className="p-3 bg-blue-600 rounded-xl text-white shadow-lg hover:bg-blue-500 transition-colors duration-200">
           <Send className="w-5 h-5" />
         </button>
