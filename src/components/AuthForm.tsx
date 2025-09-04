@@ -207,12 +207,12 @@ const AuthForm = ({ onLoginSuccess }) => {
   );
 };
 
-const UserList = ({ users, onUserSelect }) => {
+const UserList = ({ users, onUserSelect, title = "Utilisateurs" }) => {
   return (
     <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-white/20 w-full">
       <h2 className="text-lg font-bold text-white mb-4">
         <span className="bg-gradient-to-r from-silver-200 via-white to-blue-300 bg-clip-text text-transparent">
-          Utilisateurs
+          {title}
         </span>
       </h2>
       <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '60vh' }}>
@@ -226,7 +226,7 @@ const UserList = ({ users, onUserSelect }) => {
             </button>
           ))
         ) : (
-          <p className="text-slate-400 text-center text-sm">Aucun utilisateur enregistré.</p>
+          <p className="text-slate-400 text-center text-sm">Aucun utilisateur trouvé.</p>
         )}
       </div>
     </div>
@@ -245,7 +245,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
     const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages', conversationId, 'chat');
     const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
       const messagesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      messagesList.sort((a, b) => a.createdAt.seconds - b.createdAt.seconds);
+      messagesList.sort((a, b) => a.createdAt?.seconds - b.createdAt?.seconds);
       setMessages(messagesList);
       scrollToBottom();
     });
@@ -317,18 +317,11 @@ const SettingsPage = () => (
   </div>
 );
 
-const HomePage = () => (
-  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-center h-full flex flex-col justify-center items-center">
-    <Home className="w-16 h-16 text-blue-400 mb-4" />
-    <h2 className="text-xl font-bold text-white mb-2">Accueil</h2>
-    <p className="text-slate-400">Bienvenue sur Metal Exchange !</p>
-  </div>
-);
-
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [recentChatUsers, setRecentChatUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentPage, setCurrentPage] = useState('home'); // Pour la navigation mobile
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -359,24 +352,60 @@ const App = () => {
   // Récupérer tous les utilisateurs après une connexion réussie
   useEffect(() => {
     if (isLoggedIn) {
-      const fetchUsers = async () => {
+      const fetchAllUsers = async () => {
         try {
           const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
           const querySnapshot = await getDocs(usersRef);
           const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setUsers(usersList.filter(u => u.id !== currentUser.id)); // Exclure l'utilisateur actuel
+          setAllUsers(usersList.filter(u => u.id !== currentUser.id)); // Exclure l'utilisateur actuel
         } catch (err) {
           console.error('Erreur lors de la récupération des utilisateurs:', err);
         }
       };
-      fetchUsers();
+      fetchAllUsers();
+
+      // Récupérer l'historique des conversations
+      const fetchRecentChats = async () => {
+        try {
+          const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+          const messagesSnapshot = await getDocs(messagesRef);
+          const recentUserIds = new Set();
+          
+          messagesSnapshot.forEach(doc => {
+            const conversationId = doc.id;
+            const parts = conversationId.split('_');
+            if (parts.includes(currentUser.id)) {
+              const otherUserId = parts.find(id => id !== currentUser.id);
+              if (otherUserId) {
+                recentUserIds.add(otherUserId);
+              }
+            }
+          });
+
+          // Fetch user data for recent chats
+          const usersPromises = Array.from(recentUserIds).map(userId => 
+            getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'users'), where('__name__', '==', userId)))
+          );
+
+          const usersSnapshots = await Promise.all(usersPromises);
+          const recentUsersList = usersSnapshots.flatMap(snapshot =>
+            snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          );
+
+          setRecentChatUsers(recentUsersList);
+
+        } catch (err) {
+          console.error('Erreur lors de la récupération des conversations récentes:', err);
+        }
+      };
+      fetchRecentChats();
     }
   }, [isLoggedIn, currentUser]);
 
   const onLoginSuccess = (user) => {
     setCurrentUser(user);
     setIsLoggedIn(true);
-    setCurrentPage('users'); // Naviguer vers la liste des utilisateurs après connexion
+    setCurrentPage('home'); // Naviguer vers la liste des conversations récentes
   };
 
   const handleUserSelect = (user) => {
@@ -386,7 +415,7 @@ const App = () => {
 
   const handleBack = () => {
     setSelectedUser(null);
-    setCurrentPage('users');
+    setCurrentPage('home'); // Revenir à la liste des conversations récentes
   };
 
   // Rendu de l'application
@@ -399,15 +428,15 @@ const App = () => {
       // Vue mobile
       switch (currentPage) {
         case 'home':
-          return <HomePage />;
+          return <UserList users={recentChatUsers} onUserSelect={handleUserSelect} title="Conversations récentes" />;
         case 'users':
-          return <UserList users={users} onUserSelect={handleUserSelect} />;
+          return <UserList users={allUsers} onUserSelect={handleUserSelect} />;
         case 'settings':
           return <SettingsPage />;
         case 'chat':
           return <Chat currentUserId={currentUser.id} selectedUser={selectedUser} onBack={handleBack} />;
         default:
-          return <HomePage />;
+          return <UserList users={recentChatUsers} onUserSelect={handleUserSelect} title="Conversations récentes" />;
       }
     } else {
       // Vue desktop (PC)
@@ -418,12 +447,12 @@ const App = () => {
               <Chat currentUserId={currentUser.id} selectedUser={selectedUser} onBack={handleBack} />
             ) : (
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-center h-full flex items-center justify-center">
-                <p className="text-slate-400">Sélectionnez un utilisateur pour commencer à chatter.</p>
+                <p className="text-slate-400">Sélectionnez une conversation récente ou un utilisateur pour commencer à chatter.</p>
               </div>
             )}
           </div>
           <div className="w-1/3 p-4 bg-slate-900/50">
-            <UserList users={users} onUserSelect={handleUserSelect} />
+            <UserList users={allUsers} onUserSelect={handleUserSelect} />
           </div>
         </div>
       );
