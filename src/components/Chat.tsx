@@ -86,7 +86,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
       const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
       await setDoc(typingRef, { typingUserId: '' }, { merge: true });
     } catch (error) {
-      console.error("Erreur lors de l'envoi du message:", error);
+      console.error("Error sending message:", error);
     }
   };
 
@@ -140,7 +140,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-        <input type="text" value={newMessage} onChange={handleTyping} placeholder="Écrire un message..." className="flex-1 pl-4 pr-3 py-2 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+        <input type="text" value={newMessage} onChange={handleTyping} placeholder="Write a message..." className="flex-1 pl-4 pr-3 py-2 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         <button type="submit" className="p-3 bg-blue-600 rounded-xl text-white shadow-lg hover:bg-blue-500 transition-colors duration-200">
           <Send className="w-5 h-5" />
         </button>

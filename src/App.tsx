@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDocs, collection, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
@@ -11,7 +10,7 @@ import Chat from './components/Chat';
 import NewsPage from './components/NewsPage';
 import SettingsPage from './components/SettingsPage';
 
-// Initialisation de Firebase
+// Firebase Initialization
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
   apiKey: "AIzaSyA9fMT5Sj91Z3BzgcF8TvVvocRzide3nNc",
@@ -47,7 +46,7 @@ const App = () => {
           await signInAnonymously(auth);
         }
       } catch (e) {
-        console.error("Erreur lors de l'authentification :", e);
+        console.error("Authentication error:", e);
       }
     };
     authUser();
@@ -146,17 +145,17 @@ const App = () => {
         return (
           <div className="flex flex-col md:flex-row h-full gap-4">
             <div className="w-full md:w-1/3 h-full">
-              <UserList users={recentChatUsers} onUserSelect={setSelectedUser} title="Discussions récentes" unreadCounts={unreadCounts} />
+              <UserList users={recentChatUsers} onUserSelect={setSelectedUser} title="Recent Chats" unreadCounts={unreadCounts} />
             </div>
             <div className="w-full md:w-2/3 h-full">
-              <UserList users={allUsers} onUserSelect={setSelectedUser} title="Tous les utilisateurs" />
+              <UserList users={allUsers} onUserSelect={setSelectedUser} title="All Users" />
             </div>
           </div>
         );
       case 'messages':
         return (
           <div className="w-full h-full">
-            <NewsPage unreadUsers={Object.keys(unreadCounts).map(id => allUsers.find(u => u.id === id) || {id, name: 'Inconnu', unreadCount: unreadCounts[id]})
+            <NewsPage unreadUsers={Object.keys(unreadCounts).map(id => allUsers.find(u => u.id === id) || {id, name: 'Unknown', unreadCount: unreadCounts[id]})
             .filter(u => u.name).sort((a, b) => b.unreadCount - a.unreadCount)} onUserSelect={setSelectedUser} />
           </div>
         );
@@ -186,18 +185,18 @@ const App = () => {
             <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-2 shadow-2xl border border-white/20 flex flex-col space-y-2">
               <button onClick={() => handlePageChange('home')} className={`flex items-center space-x-3 w-full p-3 rounded-xl transition-colors duration-200 ${currentPage === 'home' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}>
                 <Home className="w-5 h-5" />
-                <span className="font-medium">Accueil</span>
+                <span className="font-medium">Home</span>
               </button>
               <button onClick={() => handlePageChange('messages')} className={`flex items-center space-x-3 w-full p-3 rounded-xl transition-colors duration-200 ${currentPage === 'messages' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}>
                 <Bell className="w-5 h-5" />
-                <span className="font-medium">Nouveaux messages</span>
+                <span className="font-medium">New Messages</span>
                 {Object.keys(unreadCounts).length > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">{Object.keys(unreadCounts).length}</span>
                 )}
               </button>
               <button onClick={() => handlePageChange('settings')} className={`flex items-center space-x-3 w-full p-3 rounded-xl transition-colors duration-200 ${currentPage === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}>
                 <Settings className="w-5 h-5" />
-                <span className="font-medium">Paramètres</span>
+                <span className="font-medium">Settings</span>
               </button>
             </div>
           </div>
@@ -217,7 +216,7 @@ const App = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-slate-800/50 backdrop-blur-lg border-t border-white/20 p-2 flex justify-around">
             <button onClick={() => handlePageChange('home')} className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-colors duration-200 ${currentPage === 'home' ? 'text-blue-400' : 'text-slate-400 hover:bg-slate-700/50'}`}>
               <Home className="w-6 h-6" />
-              <span className="text-xs font-medium">Accueil</span>
+              <span className="text-xs font-medium">Home</span>
             </button>
             <button onClick={() => handlePageChange('messages')} className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-colors duration-200 ${currentPage === 'messages' ? 'text-blue-400' : 'text-slate-400 hover:bg-slate-700/50'}`}>
               <Bell className="w-6 h-6" />
@@ -228,7 +227,7 @@ const App = () => {
             </button>
             <button onClick={() => handlePageChange('settings')} className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-colors duration-200 ${currentPage === 'settings' ? 'text-blue-400' : 'text-slate-400 hover:bg-slate-700/50'}`}>
               <Settings className="w-6 h-6" />
-              <span className="text-xs font-medium">Paramètres</span>
+              <span className="text-xs font-medium">Settings</span>
             </button>
           </div>
         )}

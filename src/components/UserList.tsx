@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-const UserList = ({ users, onUserSelect, title = "Utilisateurs", unreadCounts = {} }) => {
+const UserList = ({ users, onUserSelect, title = "Users", unreadCounts = {} }) => {
   return (
     <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl p-4 shadow-2xl border border-white/20 w-full">
       <h2 className="text-lg font-bold text-white mb-4">
@@ -25,7 +25,7 @@ const UserList = ({ users, onUserSelect, title = "Utilisateurs", unreadCounts = 
             </button>
           ))
         ) : (
-          <p className="text-slate-400 text-center text-sm">Aucun utilisateur trouvé.</p>
+          <p className="text-slate-400 text-center text-sm">No user found.</p>
         )}
       </div>
     </div>
