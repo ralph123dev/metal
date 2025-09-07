@@ -118,7 +118,7 @@ const AuthForm = ({ onLoginSuccess }) => {
           </span>
         </h1>
         <p className="text-slate-400 text-sm">
-          {isLogin ? 'Bienvenue à nouveau' : 'Rejoignez la communauté'}
+          {isLogin ? 'Bienvenue à nouveau' : 'Join Community'}
         </p>
       </div>
       <div className="relative">
@@ -131,13 +131,13 @@ const AuthForm = ({ onLoginSuccess }) => {
               onClick={switchMode}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${!isLogin ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105' : 'text-slate-300 hover:text-white'}`}
             >
-              S'inscrire
+              join
             </button>
             <button
               onClick={switchMode}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform ${isLogin ? 'bg-gradient-to-r from-silver-400 to-blue-500 text-white shadow-lg scale-105' : 'text-slate-300 hover:text-white'}`}
             >
-              Se connecter
+              Login
             </button>
           </div>
           {error && (
@@ -151,14 +151,14 @@ const AuthForm = ({ onLoginSuccess }) => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
                 </div>
-                <input type="text" name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required={!isLogin} className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
+                <input type="text" name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Name" required={!isLogin} className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
               </div>
             )}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Phone className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
               </div>
-              <input type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} placeholder="Numéro de téléphone (ex: +33 6 12 34 56 78)" required className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
+              <input type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} placeholder="Phone Number (ex: +33 6 12 34 56 78)" required className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02]" />
             </div>
             {!isLogin && (
               <div className="relative group transform transition-all duration-500 animate-fadeIn">
@@ -166,14 +166,14 @@ const AuthForm = ({ onLoginSuccess }) => {
                   <Globe className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-200" />
                 </div>
                 <select name="pays" value={formData.pays} onChange={handleInputChange} required={!isLogin} className="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-800/50 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02] appearance-none">
-                  <option value="" disabled className="bg-slate-800">Sélectionnez votre pays</option>
+                  <option value="" disabled className="bg-slate-800">Select Country</option>
                   {countries.map((country, index) => (<option key={`${country}-${index}`} value={country} className="bg-slate-800">{country}</option>))}
                 </select>
               </div>
             )}
             <button type="submit" disabled={loading} className="w-full py-3 px-4 bg-gradient-to-r from-silver-500 via-slate-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/50 active:scale-[0.98] relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed">
               <span className="relative z-10">
-                {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
+                {loading ? 'Loading...' : (isLogin ? 'Login' : 'Create account')}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </button>
@@ -288,7 +288,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
     // Met également à jour après un court délai pour s'assurer que les messages récents sont bien marqués
     readStatusTimeoutRef.current = setTimeout(updateReadStatus, 1000);
     return () => {
-        clearTimeout(readStatusTimeoutRef.current);
+      clearTimeout(readStatusTimeoutRef.current);
     }
   }, [currentUserId, conversationId]);
 
@@ -315,10 +315,10 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
       console.error("Erreur lors de l'envoi du message:", error);
     }
   };
-  
+
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
-    
+
     const typingRef = doc(db, 'artifacts', appId, 'public', 'data', 'typingStatus', conversationId);
     setDoc(typingRef, { typingUserId: currentUserId }, { merge: true });
 
@@ -335,7 +335,7 @@ const Chat = ({ currentUserId, selectedUser, onBack }) => {
       <div className="flex items-center space-x-2 pb-4 border-b border-white/20">
         <button onClick={onBack} className="md:hidden text-white hover:text-blue-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
+            <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </button>
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
@@ -466,7 +466,7 @@ const App = () => {
     const readStatusRef = doc(db, 'artifacts', appId, 'public', 'data', 'readStatus', currentUser.id);
     const unsubscribeReadStatus = onSnapshot(readStatusRef, async (readStatusDoc) => {
       const lastReads = readStatusDoc.exists() ? readStatusDoc.data() : {};
-      
+
       const unreadCountsMap = {};
       const recentUserIds = new Set();
       const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
@@ -481,14 +481,14 @@ const App = () => {
           if (otherUserId) recentUserIds.add(otherUserId);
         }
       });
-      
+
       // Pour chaque conversation, compter les messages non lus
       for (const otherUserId of recentUserIds) {
         const convId = [currentUser.id, otherUserId].sort().join('_');
         const lastReadTimestamp = lastReads[convId];
-        
+
         // Requête pour compter les messages de l'autre utilisateur après le dernier message lu
-        const q = lastReadTimestamp 
+        const q = lastReadTimestamp
           ? query(collection(db, 'artifacts', appId, 'public', 'data', 'messages', convId, 'chat'), where('createdAt', '>', lastReadTimestamp), where('senderId', '==', otherUserId))
           : query(collection(db, 'artifacts', appId, 'public', 'data', 'messages', convId, 'chat'), where('senderId', '==', otherUserId));
 
@@ -498,18 +498,18 @@ const App = () => {
           unreadCountsMap[otherUserId] = count;
         }
       }
-      
+
       setUnreadCounts(unreadCountsMap);
-      
+
       // Mettre à jour la liste des conversations récentes pour afficher les non lus en premier
       const allUsersMap = new Map(allUsers.map(u => [u.id, u]));
       const usersWithUnread = Object.keys(unreadCountsMap).map(id => ({
-          ...allUsersMap.get(id),
-          unreadCount: unreadCountsMap[id]
+        ...allUsersMap.get(id),
+        unreadCount: unreadCountsMap[id]
       }));
       const usersWithoutUnread = allUsers.filter(u => !unreadCountsMap[u.id] && recentChatUsers.some(rcu => rcu.id === u.id));
       setRecentChatUsers([...usersWithUnread, ...usersWithoutUnread]);
-      
+
     });
 
     return () => {
@@ -546,7 +546,7 @@ const App = () => {
         case 'users':
           return <UserList users={allUsers} onUserSelect={handleUserSelect} />;
         case 'news':
-          const unreadUsers = allUsers.filter(u => unreadCounts[u.id] > 0).map(u => ({...u, unreadCount: unreadCounts[u.id]}));
+          const unreadUsers = allUsers.filter(u => unreadCounts[u.id] > 0).map(u => ({ ...u, unreadCount: unreadCounts[u.id] }));
           return <NewsPage unreadUsers={unreadUsers} onUserSelect={handleUserSelect} />;
         case 'settings':
           return <SettingsPage />;
@@ -569,13 +569,13 @@ const App = () => {
           </div>
           <div className="w-1/3 p-4 bg-slate-900/50">
             {currentPage === 'news' ? (
-                <NewsPage unreadUsers={allUsers.filter(u => unreadCounts[u.id] > 0).map(u => ({...u, unreadCount: unreadCounts[u.id]}))} onUserSelect={handleUserSelect} />
+              <NewsPage unreadUsers={allUsers.filter(u => unreadCounts[u.id] > 0).map(u => ({ ...u, unreadCount: unreadCounts[u.id] }))} onUserSelect={handleUserSelect} />
             ) : currentPage === 'users' ? (
-                <UserList users={allUsers} onUserSelect={handleUserSelect} />
+              <UserList users={allUsers} onUserSelect={handleUserSelect} />
             ) : (
-                <UserList users={recentChatUsers} onUserSelect={handleUserSelect} title="Conversations récentes" unreadCounts={unreadCounts} />
+              <UserList users={recentChatUsers} onUserSelect={handleUserSelect} title="Conversations récentes" unreadCounts={unreadCounts} />
             )}
-            
+
           </div>
         </div>
       );
@@ -593,15 +593,15 @@ const App = () => {
         <div className="fixed bottom-0 left-0 right-0 bg-slate-900/50 backdrop-blur-lg border-t border-white/20 flex justify-around p-2 z-20">
           <button onClick={() => setCurrentPage('home')} className={`relative flex flex-col items-center text-xs font-medium ${currentPage === 'home' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
             <Home className="w-6 h-6" />
-            <span>Accueil</span>
+            <span>Home</span>
           </button>
           <button onClick={() => setCurrentPage('users')} className={`flex flex-col items-center text-xs font-medium ${currentPage === 'users' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
             <User className="w-6 h-6" />
-            <span>Utilisateurs</span>
+            <span>Users</span>
           </button>
           <button onClick={() => setCurrentPage('news')} className={`relative flex flex-col items-center text-xs font-medium ${currentPage === 'news' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
             <Bell className="w-6 h-6" />
-            <span>Nouveautés</span>
+            <span>News</span>
             {/* Affiche un badge de notification avec le nombre total de messages non lus */}
             {Object.keys(unreadCounts).length > 0 && (
               <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
@@ -611,7 +611,7 @@ const App = () => {
           </button>
           <button onClick={() => setCurrentPage('settings')} className={`flex flex-col items-center text-xs font-medium ${currentPage === 'settings' ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`}>
             <Settings className="w-6 h-6" />
-            <span>Paramètres</span>
+            <span>Settings</span>
           </button>
         </div>
       )}
